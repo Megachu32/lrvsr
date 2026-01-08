@@ -22,7 +22,43 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 shadow-sm">
         <div class="container">
             <a class="navbar-brand" href="/home">
-                <i class="fa-brands fa-reddit text-danger fa-lg"></i> RedditClone
+                <svg width="100" height="100" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#00f2ff;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#7000ff;stop-opacity:1" />
+                        </linearGradient>
+
+                        <linearGradient id="darkGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#5a00d1;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#00c8d4;stop-opacity:1" />
+                        </linearGradient>
+
+                        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+                            <feMerge>
+                                <feMergeNode in="coloredBlur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
+
+                    <g filter="url(#glow)">
+
+                        <path d="M100 40 L150 65 L100 90 L50 65 Z" fill="url(#mainGradient)" />
+
+                        <path d="M150 65 L150 115 L100 140 L100 90 Z" fill="url(#darkGradient)" />
+
+                        <path d="M50 65 L100 90 L100 140 L50 115 Z" fill="url(#mainGradient)" opacity="0.9" />
+
+                        <path d="M100 90 L100 140" stroke="white" stroke-width="1" stroke-opacity="0.3" />
+                        <path d="M100 90 L150 65" stroke="white" stroke-width="1" stroke-opacity="0.3" />
+                        <path d="M100 90 L50 65" stroke="white" stroke-width="1" stroke-opacity="0.3" />
+
+                    </g>
+
+                </svg> ClanKer
+                
             </a>
             
             <form class="d-flex mx-auto" style="width: 50%;">

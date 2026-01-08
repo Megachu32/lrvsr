@@ -22,29 +22,31 @@ class User extends Authenticatable
     protected $fillable = [
         'username',       // Changed from 'name'
         'email',
-        'password_hash',  // Changed from 'password'
         'role_id',
         'avatar_url',
+        'created_at',
+        'updated_at',
+        'password'
     ];
 
     // 3. HIDE SENSITIVE DATA
     protected $hidden = [
-        'password_hash',
+        'password',
         'remember_token',
     ];
 
     // 4. OVERRIDE PASSWORD NAME
     // This tells Laravel: "When checking passwords, look at 'password_hash' column"
-    public function getAuthPassword()
-    {
-        return $this->password_hash;
-    }
+    // public function getAuthPassword()
+    // {
+    //     return $this->password_hash;
+    // }
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'password_hash' => 'hashed', // This auto-hashes the password when saving
+            'password' => 'hashed', // This auto-hashes the password when saving
         ];
     }
 

@@ -74,7 +74,7 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
                             <li>
-                                <form method="POST" action="{{ route('logout') }}">
+                                <form method="POST" action="{{ route('logout.post') }}">
                                     @csrf
                                     <button type="submit" class="dropdown-item">Logout</button>
                                 </form>
@@ -82,7 +82,7 @@
                         </ul>
                     </div>
                 @else
-                    <a href="" class="btn btn-primary rounded-pill px-4">Log In</a>
+                    <a href="{{ route('login') }}" class="btn btn-primary rounded-pill px-4">Log In</a>                
                 @endauth
             </div>
         </div>

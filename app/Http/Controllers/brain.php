@@ -27,61 +27,68 @@ class brain extends Controller
     * = green -> highlights
     */
 
+    //login function
     public function login(Request $request)
-{
-    // 1. VALIDATION
-    $credentials = $request->validate([
-        'username' => 'required',
-        'password' => 'required',
-    ]);
+    {
+        // dd("masuk login");
+        // 1. VALIDATION 
+        $credentials = $request->validate([
+            'username' => 'required',
+            'password' => 'required',
+        ]);
 
-    // 2. ATTEMPT LOGIN
-    // Auth::attempt() does three things automatically:
-    // a. Checks database for 'username'
-    // b. Hashes the input password and compares it with the DB hash
-    // c. Starts a secure login session if they match
-    if (Auth::attempt($credentials)) {
-        
-        // Security best practice: prevent "Session Fixation" attacks
-        $request->session()->regenerate();
+        // 2. ATTEMPT LOGIN
+        // Auth::attempt() does three things automatically:
+        // a. Checks database for 'username'
+        // b. Hashes the input password and compares it with the DB hash
+        // c. Starts a secure login session if they match
+        if (Auth::attempt($credentials)) {
+            
+            // dd("berhasil login");
+            // Security best practice: prevent "Session Fixation" attacks
+            $request->session()->regenerate();
 
-        // Redirect to intended page (or default to dashboard/home)
-        // TODO change the page destination i guess
-        return redirect()->intended('dashboard')->with('success', 'Logged in successfully!');
+            // Redirect to intended page (or default to dashboard/home)
+            // TODO change the page destination i guess
+            // return redirect()->intended('dashboard')->with('success', 'Logged in successfully!');
+            return redirect()->route('home')->with('success', 'Logged in successfully!');
+        }
+
+        // 3. IF LOGIN FAILS
+        // 'back()' sends them to the login form. 
+        // 'onlyInput' keeps the username filled in so they don't have to retype it.
+        return back()->withErrors([
+            'username' => 'The provided credentials do not match our records.',
+        ])->onlyInput('username');
     }
 
-    // 3. IF LOGIN FAILS
-    // 'back()' sends them to the login form. 
-    // 'onlyInput' keeps the username filled in so they don't have to retype it.
-    return back()->withErrors([
-        'username' => 'The provided credentials do not match our records.',
-    ])->onlyInput('username');
-}
-
+    //register function
     public function register(Request $request)
     {
         // 1. VALIDATION
         // If this fails, Laravel automatically redirects back with error messages.
-      // You do NOT need manual "if" statements or redirects.
-      $validated = $request->validate([
-          'username' => 'required|unique:users,username', // TODO change the table and column it check right now, currently it checks 'users' table, 'username' column
-          'password' => 'required',                       // hey, i want your password
-          'conpass'  => 'required|same:password'          // hey, i'm supposed to be the twin of password
+        // You do NOT need manual "if" statements or redirects.
+        $validated = $request->validate([
+            'username' => 'required', // TODO change the table and column it check right now, currently it checks 'users' table, 'username' column
+            'password' => 'required',         
+            'email' => 'required|email',               // hey, i want your password
+            ]);
+
+        // 2. SAVING TO DATABASE
+            // We use the 'create' method. 
+            // CRITICAL: Never save a password as plain text. Use Hash::make()
+        User::create([
+            'username' => $request->username,
+            'password' => $request->password, 
+            'email' => $request->email,
         ]);
 
-       // 2. SAVING TO DATABASE
-        // We use the 'create' method. 
-        // CRITICAL: Never save a password as plain text. Use Hash::make()
-      User::create([
-           'username' => $request->username,
-           'password' => Hash::make($request->password), 
-      ]);
+        // 3. SUCCESS REDIRECT
+        //TODO change the route destination
+        return redirect()->route('login')->with('success', 'Registration successful! Please login.');
+    }
 
-      // 3. SUCCESS REDIRECT
-     //TODO change the route destination
-    return redirect()->route('login')->with('success', 'Registration successful! Please login.');
-}
-
+    //logout function
     public function logout(Request $request){
        // 1. Log the user out of the Auth system
         Auth::logout();
@@ -98,6 +105,8 @@ class brain extends Controller
         //TODO change the destination
         return redirect()->route('home'); // or '/'
     }
+
+    
     
 
 

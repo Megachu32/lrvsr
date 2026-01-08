@@ -10,25 +10,30 @@
                     <a href="" class="nav-link text-dark bg-light rounded mb-1">
                         <i class="fa-solid fa-house me-2"></i> Home
                     </a>
-                    <a href="#" class="nav-link text-secondary">
-                        <i class="fa-solid fa-arrow-trend-up me-2"></i> Popular
-                    </a>
-                    <a href="#" class="nav-link text-secondary">
+                    <a href="{{ route('post.create') }}" class="nav-link text-secondary">
                         <i class="fa-solid fa-plus me-2"></i> Create Post
                     </a>
-
+                    <a href="{{ route('community.create') }}" class="nav-link text-secondary">
+                        <i class="fa-solid fa-plus me-2"></i> Create Community
+                    </a>
+                    
                     <hr class="my-2 text-secondary">
 
                     <p class="text-uppercase text-secondary fw-bold small px-3 mb-1" style="font-size: 11px;">Communities</p>
-                    <a href="#" class="nav-link text-secondary d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-gamepad me-2"></i> r/gaming</span>
-                    </a>
-                    <a href="#" class="nav-link text-secondary d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-code me-2"></i> r/laravel</span>
-                    </a>
-                    <a href="#" class="nav-link text-secondary d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-basketball me-2"></i> r/nba</span>
-                    </a>
+
+                    @foreach($communities as $community)
+                        <a href="{{ route('community.view', $community->community_id) }}" class="nav-link text-secondary d-flex justify-content-between align-items-center">
+                            <span>
+                                <!-- <span class="bg-primary rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center text-white" style="width: 20px; height: 20px; font-size: 24px;">
+                                    </span> -->
+                                    <img src="{{ $community->icon_url }}" 
+                                        class="rounded-circle border" 
+                                        style="width: 30px; height: 30px; object-fit: cover;" 
+                                        alt="Avatar">                        
+                                <i class="fa-solid me-2"></i> r/{{ $community->name }}
+                            </span>
+                        </a>
+                    @endforeach
 
                     <hr class="my-2 text-secondary">
 
@@ -45,85 +50,119 @@
     </div>
 
     <div class="col-md-6">
-        
-        <div class="card p-2 d-flex flex-row align-items-center mb-3">
-            <div class="bg-secondary rounded-circle ms-2" style="width: 38px; height: 38px;"></div>
-            <input type="text" class="form-control ms-2" placeholder="Create Post" style="background-color: #F6F7F8;">
-            <i class="fa-regular fa-image fa-lg ms-3 text-secondary"></i>
-            <i class="fa-solid fa-link fa-lg ms-3 text-secondary"></i>
-        </div>
 
-        <div class="card p-2 mb-3">
-            <div class="d-flex gap-3">
-                <a href="#" class="text-decoration-none fw-bold text-dark"><i class="fa-solid fa-fire text-danger"></i> Hot</a>
-                <a href="#" class="text-decoration-none text-secondary fw-bold">New</a>
-                <a href="#" class="text-decoration-none text-secondary fw-bold">Top</a>
-            </div>
-        </div>
+        @foreach($posts as $post)
+            <div class="card d-flex flex-row mb-3"> 
+                <div class="vote-section d-flex flex-column align-items-center p-2 bg-light">
+                    
+                    <form action="{{ route('post.vote') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="post_id" value="{{ $post->post_id }}">
+                        <input type="hidden" name="vote_type" value="1">
+                        
+                        <button type="submit" class="border-0 bg-transparent p-0">
+                            <i class="fa-solid fa-arrow-up vote-btn mb-1 {{ $post->user_vote_type == 1 ? 'text-warning' : 'text-secondary' }}"></i>
+                        </button>
+                    </form>
 
-        <div class="card d-flex flex-row">
-            <div class="vote-section d-flex flex-column align-items-center p-2 bg-light">
-                <i class="fa-solid fa-arrow-up vote-btn mb-1"></i>
-                <span class="fw-bold my-1">12.5k</span>
-                <i class="fa-solid fa-arrow-down vote-btn mt-1"></i>
-            </div>
-            
-            <div class="p-2 w-100">
-                <div class="mb-1">
-                    <span class="subreddit-text">r/laravel</span>
-                    <span class="meta-text">• Posted by u/DevMaster 5 hours ago</span>
-                </div>
-                <h5 class="card-title fw-bold">How to fix 500 server error?</h5>
-                <p class="card-text">I am trying to run my project but I keep getting a white screen...</p>
-                <div class="d-flex gap-3 mt-2">
-                    <button class="btn btn-light btn-sm text-secondary fw-bold"><i class="fa-regular fa-comment-alt"></i> 45 Comments</button>
-                    <button class="btn btn-light btn-sm text-secondary fw-bold"><i class="fa-solid fa-share"></i> Share</button>
-                    <button class="btn btn-light btn-sm text-secondary fw-bold"><i class="fa-regular fa-bookmark"></i> Save</button>
-                </div>
-            </div>
-        </div>
+                    <span class="fw-bold my-1">{{ $post->votes_sum_vote_type ?? 0 }}</span>
 
-        <div class="card d-flex flex-row">
-            <div class="vote-section d-flex flex-column align-items-center p-2 bg-light">
-                <i class="fa-solid fa-arrow-up vote-btn mb-1"></i>
-                <span class="fw-bold my-1">842</span>
-                <i class="fa-solid fa-arrow-down vote-btn mt-1"></i>
+                    <form action="{{ route('post.vote') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="post_id" value="{{ $post->post_id }}">
+                        <input type="hidden" name="vote_type" value="-1">
+                        
+                        <button type="submit" class="border-0 bg-transparent p-0">
+                            <i class="fa-solid fa-arrow-down vote-btn mt-1 {{ $post->user_vote_type == -1 ? 'text-primary' : 'text-secondary' }}"></i>
+                        </button>
+                    </form>
+
+                </div>
+                
+                <div class="p-2 w-100">
+                    <div class="mb-1">
+                        <span class="subreddit-text fw-bold">r/{{ $post->community->name ?? 'unknown' }}</span>
+                        <span class="meta-text ms-2">• Posted by u/{{ $post->user->username }} {{ $post->created_at->diffForHumans() }}</span>
+                    </div>
+                    <h5 class="card-title fw-bold">{{ $post->title }}</h5>
+                    <p class="card-text">{{ $post->content }}</p>
+
+                    <div class="d-flex gap-3 mt-2">
+                        <button class="btn btn-light btn-sm text-secondary fw-bold" 
+                                type="button" 
+                                data-bs-toggle="collapse" 
+                                data-bs-target="#collapseComments-{{ $post->id }}" 
+                                aria-expanded="false">
+                            <i class="fa-regular fa-comment-alt"></i> {{ $post->comments_count ?? 0 }} Comments
+                        </button>
+                    </div>
+
+                    <div class="collapse mt-3" id="collapseComments-{{ $post->id }}">
+                        <div class="card card-body bg-light border-0">
+                            
+                            @if($post->comments->count() > 0)
+                                {{-- Loop through Parent Comments --}}
+                                @foreach($post->comments as $comment)
+                                    <div class="mb-3 border-bottom pb-2">
+                                        <div class="d-flex justify-content-between">
+                                            <strong class="small">{{ $comment->user->username }}</strong>
+                                            <span class="text-muted small">{{ $comment->created_at->diffForHumans() }}</span>
+                                        </div>
+                                        <p class="mb-1 small">{{ $comment->content }}</p>
+
+                                        {{-- Child Comments (Replies) --}}
+                                        {{-- We limit to 2 replies directly in the view using 'take(2)' --}}
+                                        <div class="ms-4 mt-2 border-start ps-3 border-primary">
+                                            @foreach($comment->replies->take(2) as $reply)
+                                                <div class="mb-2">
+                                                    <strong class="small text-secondary">{{ $reply->user->username }}</strong>
+                                                    <p class="mb-0 small text-muted">{{ $reply->content }}</p>
+                                                </div>
+                                            @endforeach
+                                            
+                                            @if($comment->replies->count() > 2)
+                                                <a href="#" class="small text-primary text-decoration-none">View more replies...</a>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+
+                                {{-- "View All" Link if there are more comments than the 3 we loaded --}}
+                                @if($post->comments_count > 3)
+                                    <div class="text-center">
+                                        <a href="#" class="btn btn-sm btn-outline-dark rounded-pill">View all {{ $post->comments_count }} comments</a>
+                                    </div>
+                                @endif
+                            @else
+                                <p class="text-muted small mb-0">No comments yet. Be the first!</p>
+                            @endif
+
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="p-2 w-100">
-                <div class="mb-1">
-                    <span class="subreddit-text">r/webdev</span>
-                    <span class="meta-text">• Posted by u/JuniorDev 8 hours ago</span>
-                </div>
-                <h5 class="card-title fw-bold">Just launched my first portfolio!</h5>
-                <div class="bg-dark text-white p-5 text-center mb-2 rounded">
-                    [Placeholder for Image/Video]
-                </div>
-                <div class="d-flex gap-3 mt-2">
-                    <button class="btn btn-light btn-sm text-secondary fw-bold"><i class="fa-regular fa-comment-alt"></i> 120 Comments</button>
-                    <button class="btn btn-light btn-sm text-secondary fw-bold"><i class="fa-solid fa-share"></i> Share</button>
-                </div>
-            </div>
-        </div>
+        @endforeach
+
     </div>
 
     <div class="col-md-3 d-none d-lg-block">
         <div class="card mb-3">
             <div class="card-header bg-primary text-white fw-bold">About Community</div>
-            <div class="card-body">
-                <p class="card-text">Welcome to the Laravel Reddit Clone! A place to learn routing, controllers, and views.</p>
-                <hr>
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <div class="fw-bold">1.2m</div>
-                        <div class="text-secondary small">Members</div>
-                    </div>
-                    <div>
-                        <div class="fw-bold">450</div>
-                        <div class="text-secondary small">Online</div>
-                    </div>
-                </div>
-                <a href="#" class="btn btn-primary w-100 mt-3 rounded-pill">Create Post</a>
-            </div>
+
+                    @foreach($communities as $community)
+                        <a href="{{ route('community.view', $community->community_id) }}" class="nav-link text-secondary d-flex justify-content-between align-items-center" style="padding: 10px 15px;">
+                            <span>
+                                <img src="{{ $community->icon_url }}" 
+                                    class="rounded-circle border" 
+                                    style="width: 30px; height: 30px; object-fit: cover;" 
+                                    alt="Avatar">     
+                                <i class="fa-solid me-2"></i> r/{{ $community->name }}
+                            </span>
+                        </a>
+                    @endforeach
+                    <a href="{{ route('explore') }}" class="nav-link text-secondary d-flex justify-content-between align-items-center" style="padding: 10px 15px;">
+                        <span><i class="fa-solid me-2"></i> Create Community</span>
+                    </a>
         </div>
 
         <div class="card">

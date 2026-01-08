@@ -190,33 +190,37 @@
         <button id="register-btn" class="toggle-btn" onclick="showRegister()">REGISTER</button>
     </div>
 
-    <div id="login-form" class="form-box active">
-        <div class="input-group">
-            <label>EMAIL</label>
-            <input type="email" placeholder="user@example.com">
-        </div>
-        <div class="input-group">
-            <label>PASSWORD</label>
-            <input type="password" placeholder="••••••••">
-        </div>
-        <button class="btn-submit">LOGIN</button>
-    </div>
-
-    <div id="register-form" class="form-box">
+    <!-- login section -->
+    <form id="login-form" class="form-box active" action="{{ route('login.post') }}" method="POST"> 
+        @csrf
         <div class="input-group">
             <label>USERNAME</label>
-            <input type="text" placeholder="Desired Username">
-        </div>
-        <div class="input-group">
-            <label>EMAIL</label>
-            <input type="email" placeholder="user@example.com">
+            <input type="text" placeholder="Desired username" name="username">
         </div>
         <div class="input-group">
             <label>PASSWORD</label>
-            <input type="password" placeholder="Create Password">
+            <input type="password" placeholder="••••••••" name="password">
+        </div>
+        <button class="btn-submit">LOGIN</button>
+    </form>
+
+    <!-- register section -->
+    <form id="register-form" class="form-box" action="{{ route('register.post') }}" method="POST"> 
+        @csrf
+        <div class="input-group">
+            <label>USERNAME</label>
+            <input type="text" placeholder="Desired Username" name="username">
+        </div>
+        <div class="input-group">
+            <label>EMAIL</label>
+            <input type="email" placeholder="user@example.com" name="email">
+        </div>
+        <div class="input-group">
+            <label>PASSWORD</label>
+            <input type="password" placeholder="Create Password" name="password">
         </div>
         <button class="btn-submit">REGISTER</button>
-    </div>
+    </form>
 
 </div>
 

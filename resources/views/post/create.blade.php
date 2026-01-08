@@ -6,7 +6,7 @@
         <div class="card shadow-sm">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <h4 class="mb-0">Create a Post</h4>
-                <a href="" class="btn btn-sm btn-outline-secondary">Create New Community</a>
+                <a href="{{ route('community.create') }}" class="btn btn-sm btn-outline-secondary">Create New Community</a>
             </div>
             
             <div class="card-body">
@@ -20,14 +20,16 @@
                     </div>
                 @endif
 
-                <form action="" method="POST">
+                <form action="{{ route('post.create.post') }}" method="POST">
                     @csrf
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Choose a Community</label>
-                        <select name="category_id" class="form-select" required>
+                        <select name="community_id" class="form-select" required>
                             <option value="" disabled selected>Select a community (r/...)</option>
-                            
+                            @foreach($communities as $community)
+                                <option value="{{ $community->community_id }}">r/{{ $community->name }}</option>
+                            @endforeach
                         </select>
                     </div>
                     
@@ -42,7 +44,7 @@
                     </div>
 
                     <div class="d-flex justify-content-end">
-                        <a href="" class="btn btn-outline-secondary me-2 rounded-pill">Cancel</a>
+                        <a href="{{ url()->previous() }}" class="btn btn-outline-secondary me-2 rounded-pill">Cancel</a>
                         <button type="submit" class="btn btn-dark rounded-pill px-4">Post</button>
                     </div>
                 </form>

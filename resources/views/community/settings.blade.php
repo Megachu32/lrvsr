@@ -4,23 +4,29 @@
 <div class="container">
     <h2>Manage r/{{ $community->name }}</h2>
 
+    {{-- 1. OWNER SETTINGS (Icon) --}}
     @if($mySubscription->role === 'admin')
-    <div class="card mb-4">
-        <div class="card-header">Owner Settings</div>
+    <div class="card mb-4 border-primary">
+        <div class="card-header bg-primary text-white">Owner Settings</div>
         <div class="card-body">
-            <form action="#" method="POST"> @csrf
-                <label>Community Icon URL</label>
-                <input type="text" name="icon_url" value="{{ $community->icon_url }}" class="form-control mb-2">
-                <button class="btn btn-primary">Save Icon</button>
+            {{-- FIX: Added Action Route --}}
+            <form action="{{ route('community.updateIcon', $community->community_id) }}" method="POST"> 
+                @csrf
+                <label class="fw-bold">Community Icon URL</label>
+                <div class="input-group mt-2">
+                    <input type="url" name="icon_url" value="{{ $community->icon_url }}" class="form-control" placeholder="https://..." required>
+                    <button class="btn btn-primary">Save Icon</button>
+                </div>
             </form>
         </div>
     </div>
     @endif
 
+    {{-- 2. MEMBER MANAGEMENT --}}
     <div class="card">
         <div class="card-header">Member Roles</div>
         <div class="card-body">
-            <table class="table">
+            <table class="table align-middle">
                 <thead>
                     <tr>
                         <th>User</th>
@@ -31,7 +37,10 @@
                 <tbody>
                 @foreach($members as $member)
                     <tr>
-                        <td>{{ $member->user->username }}</td>
+                        <td>
+                            <img src="{{ $member->user->avatar_url ?? 'https://via.placeholder.com/30' }}" class="rounded-circle me-1" width="30">
+                            {{ $member->user->username }}
+                        </td>
                         <td>
                             @if($member->role === 'admin') <span class="badge bg-danger">Owner</span>
                             @elseif($member->role === 'moderator') <span class="badge bg-success">Mod</span>
@@ -41,27 +50,45 @@
                         <td>
                             @php
                                 $canEdit = false;
+                                // Admin can edit anyone except themselves (obviously)
                                 if ($mySubscription->role === 'admin' && $member->role !== 'admin') $canEdit = true;
+                                // Mods can only edit regular members
                                 if ($mySubscription->role === 'moderator' && $member->role === 'member') $canEdit = true;
                             @endphp
 
                             @if($canEdit)
-                            <form action="{{ route('community.updateRole', $community->community_id) }}" method="POST" class="d-flex gap-2">
-                                @csrf
-                                <input type="hidden" name="user_id" value="{{ $member->user_id }}">
-                                
-                                <select name="role" class="form-select form-select-sm w-auto">
-                                    <option value="member" {{ $member->role == 'member' ? 'selected' : '' }}>Member</option>
-                                    <option value="moderator" {{ $member->role == 'moderator' ? 'selected' : '' }}>Moderator</option>
-                                    @if($mySubscription->role === 'admin')
-                                        @endif
-                                </select>
-                                
-                                <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
-                                <button type="submit" name="ban" value="1" class="btn btn-sm btn-danger">Ban</button>
-                            </form>
+                            <div class="d-flex gap-2">
+                                {{-- Standard Role Change Form --}}
+                                <form action="{{ route('community.updateRole', $community->community_id) }}" method="POST" class="d-flex gap-2">
+                                    @csrf
+                                    <input type="hidden" name="user_id" value="{{ $member->user_id }}">
+                                    
+                                    <select name="role" class="form-select form-select-sm w-auto">
+                                        <option value="member" {{ $member->role == 'member' ? 'selected' : '' }}>Member</option>
+                                        <option value="moderator" {{ $member->role == 'moderator' ? 'selected' : '' }}>Moderator</option>
+                                    </select>
+                                    
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                                    <button type="submit" name="ban" value="1" class="btn btn-sm btn-danger" onclick="return confirm('Ban this user from the community?')">Ban</button>
+                                </form>
+
+                                {{-- NEW: Transfer Ownership Button (Only for Owner) --}}
+                                @if($mySubscription->role === 'admin')
+                                <form action="{{ route('community.transfer', $community->community_id) }}" method="POST" onsubmit="return confirm('DANGER: Are you sure you want to transfer ownership to {{ $member->user->username }}? You will lose Owner status.')">
+                                    @csrf
+                                    <input type="hidden" name="new_owner_id" value="{{ $member->user_id }}">
+                                    <button type="submit" class="btn btn-sm btn-warning" title="Make Owner">
+                                        <i class="fa-solid fa-crown"></i> Pass Crown
+                                    </button>
+                                </form>
+                                @endif
+                            </div>
                             @else
-                                <span class="text-muted small">No actions available</span>
+                                @if($member->user_id === Auth::id())
+                                    <span class="badge bg-light text-dark border">It's You</span>
+                                @else
+                                    <span class="text-muted small">No actions</span>
+                                @endif
                             @endif
                         </td>
                     </tr>

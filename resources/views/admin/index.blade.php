@@ -3,7 +3,13 @@
 @section('content')
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold"><i class="fa-solid fa-user-shield text-danger"></i> Admin Dashboard</h2>
+        <div>
+            <h2 class="fw-bold"><i class="fa-solid fa-user-shield text-danger"></i> Admin Dashboard</h2>
+            <!-- HACK - checking report page-->
+            <a href="{{ route('admin.report') }}" class="btn btn-primary">
+                <i class="fa-solid fa-file-lines me-2"></i> View Moderation Report
+            </a>
+        </div>
         <span class="badge bg-secondary">Logged in as Super Admin</span>
     </div>
 
@@ -65,7 +71,7 @@
                                     <td class="small text-muted">{{ $user->created_at->format('M d, Y') }}</td>
                                     <td>
                                         @if($user->user_id !== Auth::id())
-                                            <form action="#" method="POST" onsubmit="return confirm('Ban this user?')">
+                                            <form action="{{ route('admin.ban', $user->user_id) }}" method="POST" onsubmit="return confirm('Permanently ban this user?')">
                                                 @csrf
                                                 <button class="btn btn-sm btn-outline-danger" title="Ban User">
                                                     <i class="fa-solid fa-ban"></i>

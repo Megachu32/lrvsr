@@ -49,15 +49,22 @@ Route::post('/logout', [Brain::class, 'logout'])->name('logout.post');
 
 Route::get('/communityCreate', [brain::class, 'createCommunity'])->name('community.create');
 
-Route::get('/postCreate', [brain::class, 'createPost'])->name('post.create');
+// Route::get('/postCreate', [brain::class, 'createPost'])->name('post.create');
+
+// Route::post('/create-post', [Brain::class, 'postPost'])->name('post.create.post');
+
+Route::get('/post/create', [brain::class, 'createPost'])->name('post.create');
+
+Route::post('/post/create', [brain::class, 'storePost'])->name('post.store');
 
 Route::post('/create-community', [Brain::class, 'postCommunity'])->name('community.create.post');
-
-Route::post('/create-post', [Brain::class, 'postPost'])->name('post.create.post');
 
 Route::get('/view-community/{id}', [Brain::class, 'viewCommunity'])->name('community.view');
 
 Route::get('/join-community/{id}', [Brain::class, 'joinCommunity'])->name('community.join');
+
+Route::post('/c/{id}/icon', [brain::class, 'updateCommunityIcon'])->name('community.updateIcon');
+Route::post('/c/{id}/transfer', [brain::class, 'transferOwnership'])->name('community.transfer');
 
 Route::post('/vote', [brain::class, 'vote'])->name('post.vote');
 
@@ -76,3 +83,11 @@ Route::get('/c/{id}/settings', [brain::class, 'settings'])->name('community.sett
 Route::post('/c/{id}/role', [brain::class, 'updateRole'])->name('community.updateRole');
 
 Route::get('/admin/dashboard', [brain::class, 'adminDashboard'])->name('admin.dashboard');
+
+Route::get('/admin/report', [App\Http\Controllers\brain::class, 'activityReport'])->name('admin.report');
+
+// Admin Actions
+Route::post('/admin/ban/{id}', [App\Http\Controllers\brain::class, 'adminBanUser'])->name('admin.ban');
+Route::delete('/admin/community/{id}', [App\Http\Controllers\brain::class, 'adminDeleteCommunity'])->name('admin.community.delete');
+
+

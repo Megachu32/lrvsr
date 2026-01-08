@@ -30,4 +30,12 @@ Route::get('/profile', function () {
     return view('profile');
 });
 
+Route::get('/communityCreate', function () {
+    return view('community.create');
+});
+
+Route::get('/postCreate', function () {
+    return view('post.create');
+});
+
 

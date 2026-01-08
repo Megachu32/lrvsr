@@ -8,7 +8,8 @@
                 <h4 class="mb-0">Create a Community</h4>
             </div>
             <div class="card-body">
-                <form action="" method="POST">
+
+                <form action="{{ route('community.create.post') }}" method="POST">
                     @csrf
                     
                     <div class="mb-3">

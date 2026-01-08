@@ -17,7 +17,7 @@ class Subscription extends Model
     // Based on my code earlier, we only added 'joined_at', so:
     public $timestamps = false; 
 
-    protected $fillable = ['user_id', 'community_id', 'joined_at'];
+    protected $fillable = ['user_id', 'community_id', 'joined_at', 'role', 'is_banned'];
 
     // Relationship: Who is the subscriber?
     public function user()

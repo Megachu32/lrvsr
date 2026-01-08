@@ -13,13 +13,14 @@ return new class extends Migration
     {
         Schema::create('communities', function (Blueprint $table) {
             $table->id('community_id');
-            $table->string('name')->unique(); // e.g. 'r/Tech'
+            $table->string('name')->unique();
             $table->text('description')->nullable();
             
-            // This links to the user who created it
-            // onDelete('cascade') means if User is deleted, the Community is deleted too
-            $table->foreignId('creator_id')->constrained('users', 'user_id')->onDelete('cascade');
+            // Storing the link from the internet
+            // e.g., "https://i.imgur.com/example.png"
+            $table->string('icon_url')->nullable(); 
             
+            $table->foreignId('creator_id')->constrained('users', 'user_id')->onDelete('cascade');
             $table->timestamps();
         });
     }

@@ -21,7 +21,7 @@
 
     <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 shadow-sm">
         <div class="container">
-            <a class="navbar-brand" href="/home">
+            <a class="navbar-brand" href="{{ route('home') }}" style="font-weight: bold; font-size: 24px; display: flex; align-items: center; gap: 8px;">
                 <svg width="100" height="100" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
                     <defs>
                         <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -61,13 +61,23 @@
                 
             </a>
             
-            <form class="d-flex mx-auto" style="width: 50%;">
-                <input class="form-control me-2" type="search" placeholder="Search Reddit" aria-label="Search" style="background-color: #F6F7F8; border: 1px solid #EDEFF1;">
+            <form action="{{ route('search') }}" method="GET" class="d-flex w-50">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="fa-solid fa-search text-secondary"></i>
+                    </span>
+                    <input class="form-control bg-light border-start-0" 
+                        type="search" 
+                        name="q" 
+                        placeholder="Search Reddit..." 
+                        value="{{ request('q') }}"> </div>
             </form>
 
             <div class="navbar-nav ms-auto">
                 @auth
-                    <a href="#" class="btn btn-outline-primary me-2 rounded-pill">+ Create Post</a>
+                    <a href="{{ route('post.create') }}" class="btn btn-outline-primary me-2 rounded-pill">+ Create Post</a>
+
+                    <a href="{{ route('community.create') }}" class="btn btn-outline-primary me-2 rounded-pill">+ Create Community</a>
                     <div class="dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             {{ Auth::user()->name }}
@@ -79,6 +89,14 @@
                                     <button type="submit" class="dropdown-item">Logout</button>
                                 </form>
                             </li>
+                            @if(Auth::user()->role_id == 1)
+                                <li>
+                                    <a class="dropdown-item text-danger fw-bold" href="{{ route('admin.dashboard') }}">
+                                        <i class="fa-solid fa-user-shield me-2"></i> Admin Page
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                            @endif
                         </ul>
                     </div>
                 @else

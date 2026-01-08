@@ -23,6 +23,12 @@ class Post extends Model
         return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
 
+    // A Post has many Votes
+    public function votes()
+    {
+        return $this->hasMany(Vote::class, 'post_id', 'post_id');
+    }
+
     // A Post belongs to a Community
     public function community()
     {

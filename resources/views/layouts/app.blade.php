@@ -83,12 +83,6 @@
                             {{ Auth::user()->name }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li>
-                                <form method="POST" action="{{ route('logout.post') }}">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item">Logout</button>
-                                </form>
-                            </li>
                             @if(Auth::user()->role_id == 1)
                                 <li>
                                     <a class="dropdown-item text-danger fw-bold" href="{{ route('admin.dashboard') }}">
@@ -97,6 +91,12 @@
                                 </li>
                                 <li><hr class="dropdown-divider"></li>
                             @endif
+                            <li>
+                                <form method="POST" action="{{ route('logout.post') }}">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item">Logout</button>
+                                </form>
+                            </li>                          
                         </ul>
                     </div>
                 @else

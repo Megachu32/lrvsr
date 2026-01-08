@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laravel Reddit Clone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body { background-color: #DAE0E6; } /* Reddit Gray */
+        .card { border: none; margin-bottom: 15px; }
+        .vote-section { background-color: #F8F9FA; width: 40px; text-align: center; border-right: 1px solid #eee; border-radius: 4px 0 0 4px;}
+        .vote-btn { cursor: pointer; color: #878A8C; }
+        .vote-btn:hover { color: #CC3700; background-color: #e9e9e9; }
+        .subreddit-text { font-weight: bold; font-size: 12px; color: #1C1C1C; }
+        .meta-text { font-size: 12px; color: #787C7E; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="/home">
+                <i class="fa-brands fa-reddit text-danger fa-lg"></i> RedditClone
+            </a>
+            
+            <form class="d-flex mx-auto" style="width: 50%;">
+                <input class="form-control me-2" type="search" placeholder="Search Reddit" aria-label="Search" style="background-color: #F6F7F8; border: 1px solid #EDEFF1;">
+            </form>
+
+            <div class="navbar-nav ms-auto">
+                @auth
+                    <a href="#" class="btn btn-outline-primary me-2 rounded-pill">+ Create Post</a>
+                    <div class="dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            {{ Auth::user()->name }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button type="submit" class="dropdown-item">Logout</button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                @else
+                    <a href="" class="btn btn-primary rounded-pill px-4">Log In</a>
+                @endauth
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        @yield('content')
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

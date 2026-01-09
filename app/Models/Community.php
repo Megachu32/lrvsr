@@ -18,7 +18,8 @@ class Community extends Model
     protected $fillable = [
         'name',
         'description',
-        'creator_id'
+        'creator_id',
+        'icon_url',
     ];
 
     // 3. RELATIONSHIPS

@@ -15,10 +15,10 @@ return new class extends Migration
             $table->id('community_id');
             $table->string('name')->unique();
             $table->text('description')->nullable();
-            
+            $table->string('icon_url')->default('https://media.istockphoto.com/id/814423752/photo/eye-of-model-with-colorful-art-make-up-close-up.jpg?s=612x612&w=0&k=20&c=l15OdMWjgCKycMMShP8UK94ELVlEGvt7GmB_esHWPYE=');
             // Storing the link from the internet
             // e.g., "https://i.imgur.com/example.png"
-            $table->string('icon_url')->nullable(); 
+            // $table->string('icon_url')->nullable(); --- IGNORE ---
             
             $table->foreignId('creator_id')->constrained('users', 'user_id')->onDelete('cascade');
             $table->timestamps();

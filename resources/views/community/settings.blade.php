@@ -4,18 +4,26 @@
 <div class="container">
     <h2>Manage r/{{ $community->name }}</h2>
 
-    {{-- 1. OWNER SETTINGS (Icon) --}}
-    @if($mySubscription->role === 'admin')
+{{-- 1. OWNER SETTINGS (Icon) --}}
+    {{-- USE NEW LOGIC: Allow Community Admin OR Global Admin --}}
+    @if(($mySubscription && $mySubscription->role === 'admin') || Auth::user()->role_id == 1)
+    
+    {{-- USE MAIN STYLING: It looks better --}}
     <div class="card mb-4 border-primary">
         <div class="card-header bg-primary text-white">Owner Settings</div>
         <div class="card-body">
-            {{-- FIX: Added Action Route --}}
+            
             <form action="{{ route('community.updateIcon', $community->community_id) }}" method="POST"> 
                 @csrf
+                {{-- USE NEW LOGIC: Method Spoofing is required --}}
+                @method('PUT')
+
                 <label class="fw-bold">Community Icon URL</label>
+                
+                {{-- USE MAIN INPUT: It has the 'input-group' layout and validation --}}
                 <div class="input-group mt-2">
                     <input type="url" name="icon_url" value="{{ $community->icon_url }}" class="form-control" placeholder="https://..." required>
-                    <button class="btn btn-primary">Save Icon</button>
+                    <button type="submit" class="btn btn-primary">Save Icon</button>
                 </div>
             </form>
         </div>

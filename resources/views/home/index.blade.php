@@ -161,17 +161,8 @@
                         </a>
                     @endforeach
                     <a href="{{ route('explore') }}" class="nav-link text-secondary d-flex justify-content-between align-items-center" style="padding: 10px 15px;">
-                        <span><i class="fa-solid me-2"></i> Create Community</span>
+                        <span><i class="fa-solid me-2"></i> Explore Communities</span>
                     </a>
-        </div>
-
-        <div class="card">
-            <div class="card-header bg-light fw-bold small text-uppercase">r/Laravel Rules</div>
-            <ul class="list-group list-group-flush small">
-                <li class="list-group-item">1. Be respectful to others.</li>
-                <li class="list-group-item">2. No spam or self-promotion.</li>
-                <li class="list-group-item">3. Post relevant content only.</li>
-            </ul>
         </div>
     </div>
 

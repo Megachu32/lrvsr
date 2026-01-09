@@ -97,7 +97,7 @@ class brain extends Controller
         $validated = $request->validate([
             'username' => 'required', // TODO change the table and column it check right now, currently it checks 'users' table, 'username' column
             'password' => 'required',         
-            'email' => 'required|email',               // hey, i want your password
+            'email' => 'required|email|unique:users,email',               // hey, i want your password
             ]);
 
         // 2. SAVING TO DATABASE
@@ -106,6 +106,7 @@ class brain extends Controller
         User::create([
             'username' => $request->username,
             'password' => $request->password, 
+            'role_id' => 2, // Default role as 'regular user'
             'email' => $request->email,
         ]);
 
@@ -165,7 +166,6 @@ class brain extends Controller
             'name' => $request->name, // Now we know this is safe
             'description' => $request->description,
             'creator_id' => Auth::id(),
-            'icon_url' => $request->icon_url,
         ]);
 
         // 3. Subscribe the creator as 'admin'
@@ -355,7 +355,17 @@ class brain extends Controller
             'content' => $request->content,
         ]);
 
-        return redirect()->back()->with('success', 'Post updated successfully!');
+        $community = Community::findOrFail($post->community_id);
+
+        // 2. FETCH POSTS IN THIS COMMUNITY (optional)
+        $posts = $community->posts()
+            ->with('user')            // Load the full User data (so you can see names)
+            ->withCount('comments')   // ONLY counts them (adds 'comments_count')
+            ->withCount('votes')      // ONLY counts them (adds 'votes_count')
+            ->get();
+
+        // 3. RETURN THE VIEW WITH DATA
+        return view('community.index', compact('community', 'posts'));
     }
 
     // 3. DELETE POST
@@ -383,9 +393,14 @@ class brain extends Controller
                             ->where('community_id', $id)
                             ->first();
 
-        // SECURITY: Only Admins or Moderators can enter
-        if (!$mySubscription || $mySubscription->role === 'member') {
-            abort(403, 'You are not authorized to manage this community.');
+        // SECURITY: Allow Global Admins (role_id 1) OR Community Admins/Moderators\
+        if ($currentUser->role_id == 2) { 
+            // If NOT a Global Admin, check their community-specific role
+                    // dd("s");
+
+            if (!$mySubscription || $mySubscription->role === 'member') {
+                abort(403, 'You are not authorized to manage this community.');
+            }
         }
 
         // Get all members of this community to display in a list
@@ -393,8 +408,7 @@ class brain extends Controller
         $members = \App\Models\Subscription::where('community_id', $id)
                     ->with('user')
                     ->get();
-
-        return view('community.settings', compact('community', 'members', 'mySubscription'));
+        return view('community.settings', compact('community', 'members', 'mySubscription', 'currentUser'));
     }
 
     // 2. Change a User's Role (Promote/Demote/Ban)
@@ -438,5 +452,109 @@ class brain extends Controller
         $communities = \App\Models\Community::withCount('subscribers')->latest()->paginate(10, ['*'], 'communities_page');
 
         return view('admin.index', compact('stats', 'users', 'communities'));
+    }
+
+
+// --- RULE MANAGEMENT FUNCTIONS ---
+
+    public function rule($community_id)
+    {
+        $community = Community::with('rules')->findOrFail($community_id);
+        $rules = $community->rules;
+        return view('community.rule', compact('community', 'rules'));
+    }
+
+    // 1. INSERT FUNCTION (Create Rule)
+    public function postRule(Request $request, $community_id)
+    {
+        // dd("masuk");
+        // Validation: Ensure title and description are present
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+        ]);
+
+        // Insert into the database
+        // Assuming your Rule model is 'App\Models\Rule'
+        \App\Models\Rule::create([
+            'community_id' => $community_id,
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+        ]);
+
+        // Send them back to the home page with a success message
+        $community = Community::findOrFail($community_id);
+
+        // 2. FETCH POSTS IN THIS COMMUNITY (optional)
+        $posts = $community->posts()
+            ->with('user')            // Load the full User data (so you can see names)
+            ->withCount('comments')   // ONLY counts them (adds 'comments_count')
+            ->withCount('votes')      // ONLY counts them (adds 'votes_count')
+            ->get();
+
+        // 3. RETURN THE VIEW WITH DATA
+        return view('community.index', compact('community', 'posts'));
+
+        return back()->with('success', 'New rule added successfully!');
+    }
+
+    // 2. UPDATE FUNCTION (Edit Rule)
+    // NOTE: I changed 'brain $rule' to '\App\Models\Rule $rule' 
+    public function updateRule(Request $request, $id) 
+    {
+        $rule = \App\Models\Rule::findOrFail($id);
+
+        $validated = $request->validate([
+            'title' => 'required|max:255',
+            'description' => 'required',
+        ]);
+
+        $rule->update($validated);
+
+
+
+        return back()->with('success', 'Rule updated successfully!');
+    }
+
+    // 3. DELETE FUNCTION
+    public function destroyRule($id) 
+    {
+        $rule = \App\Models\Rule::findOrFail($id);
+        $rule->delete();
+        
+        return back()->with('success', 'Rule removed.');
+    }
+
+    public function updateIcon(Request $request, $id)
+    {
+        // 1. Find the community
+        $community = Community::findOrFail($id);
+
+        // 2. Security Check: Only the creator OR global admin (role_id 1) can change this
+        if (Auth::id() !== $community->creator_id && Auth::user()->role_id !== 1) {
+            abort(403, 'Only the owner can change the community icon.');
+        }
+
+        // 3. Validation
+        $request->validate([
+            'icon_url' => 'required|url', // Ensures it is a valid web link
+        ]);
+
+        // 4. Update the database
+        $community->update([
+            'icon_url' => $request->icon_url
+        ]);
+
+        // 5. Redirect back with success message
+
+        // 2. FETCH POSTS IN THIS COMMUNITY (optional)
+        $posts = $community->posts()
+            ->with('user')            // Load the full User data (so you can see names)
+            ->withCount('comments')   // ONLY counts them (adds 'comments_count')
+            ->withCount('votes')      // ONLY counts them (adds 'votes_count')
+            ->get();
+
+        // 3. RETURN THE VIEW WITH DATA
+        return view('community.index', compact('community', 'posts'));
     }
 }

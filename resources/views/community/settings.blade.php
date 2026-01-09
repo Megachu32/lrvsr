@@ -4,11 +4,14 @@
 <div class="container">
     <h2>Manage r/{{ $community->name }}</h2>
 
-    @if($mySubscription->role === 'admin')
+    @if($mySubscription->role === 'admin' || $currentUser->role_id == 1)
     <div class="card mb-4">
         <div class="card-header">Owner Settings</div>
         <div class="card-body">
-            <form action="#" method="POST"> @csrf
+            <form action="{{ route('community.updateIcon', $community->community_id)}}" method="POST"> 
+                @csrf
+                {{-- 2. THIS IS THE MISSING PIECE --}}
+                @method('PUT')
                 <label>Community Icon URL</label>
                 <input type="text" name="icon_url" value="{{ $community->icon_url }}" class="form-control mb-2">
                 <button class="btn btn-primary">Save Icon</button>

@@ -20,7 +20,7 @@ return new class extends Migration
 
             $table->string('username')->unique();
             $table->string('email')->unique();
-            $table->string('password_hash'); // Store hashed password here
+            $table->string('password'); // Store hashed password here
             $table->string('avatar_url')->nullable();
             $table->timestamps(); // Created_at & Updated_at
         });

@@ -36,6 +36,7 @@
                 <div class="vote-section d-flex flex-column align-items-center p-2 bg-light">
                     
                     {{-- UPVOTE BUTTON (No Form) --}}
+                    <!-- up vote button false error-->
                     <button onclick="ajaxVote({{ $post->post_id }}, 1)" 
                             class="border-0 bg-transparent p-0">
                         <i id="up-btn-{{ $post->post_id }}" 
@@ -48,6 +49,7 @@
                     </span>
 
                     {{-- DOWNVOTE BUTTON (No Form) --}}
+                    <!-- down vote button false error-->
                     <button onclick="ajaxVote({{ $post->post_id }}, -1)" 
                             class="border-0 bg-transparent p-0">
                         <i id="down-btn-{{ $post->post_id }}" 

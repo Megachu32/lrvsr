@@ -180,15 +180,54 @@
             <div class="card-header bg-light fw-bold small">
                 r/{{ $community->name ?? 'topic' }} Rules 
                 @if(Auth::check() && Auth::user()->user_id == $community->creator_id)
-                <a href="{{ route('post.create') }}" class="btn btn-primary btn-sm w-30 rounded-pill mb-2">Edit</a>
+                <form action="{{ route('rules.view', $community->community_id) }}" method="POST" class="d-inline-block float-end">
+                    @csrf
+                    <button type="submit" class="btn btn-primary btn-sm w-30 rounded-pill mb-2">Edit</button>
+                </form>
                 @endif
             </div>
             
-            <ol class="list-group list-group-numbered list-group-flush small">
+            <!-- <ol class="list-group list-group-numbered list-group-flush small">
             @foreach($community->rules as $rule)
                 <li class="list-group-item">{{ $rule->title }}</li>
             @endforeach
-            </ol>
+            </ol> -->
+
+            <ul class="list-group list-group-flush small">
+                @foreach($community->rules as $rule)
+                    <li class="list-group-item"> {{-- p-0 removes padding so the clickable area fills the whole row --}}
+                        <details class="w-100">
+                            <summary class="d-flex justify-content-between align-items-center p-2" style="cursor: pointer; list-style: none;">
+                                <strong>{{ $rule->title }}</strong>
+                                <span class="text-muted small">▼</span>
+                            </summary>
+                            
+                            <div class="p-1 border-top bg-light">
+                                {{ $rule->description }}
+                            </div>
+                        </details>
+                    </li>
+                @endforeach
+            </ul>
+
+    <style>
+        /* This removes the default small arrow so we can use our own */
+        summary::-webkit-details-marker {
+            display: none;
+        }
+
+        /* Rotates the arrow when the dropdown is open */
+        details[open] summary span {
+            transform: rotate(180deg);
+        }
+
+        /* Optional: adds a nice hover effect */
+        summary:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+
+            
         </div>
 
     </div>

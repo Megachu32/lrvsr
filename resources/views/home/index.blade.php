@@ -142,30 +142,23 @@
     <div class="col-md-3 d-none d-lg-block">
         <div class="card mb-3">
             <div class="card-header bg-primary text-white fw-bold">About Community</div>
-            {{-- Note: This currently loops ALL communities. Adjust if you only want to see stats for one. --}}
             @foreach($communities as $community)
                 <a href="{{ route('community.view', $community->community_id) }}" class="nav-link text-secondary d-flex justify-content-between align-items-center" style="padding: 10px 15px;">
                     <span>
+                        {{-- USE MAIN LOGIC: Checks if icon exists, otherwise shows default gray circle --}}
                         <img src="{{ !empty($community->icon_url) ? $community->icon_url : 'https://via.placeholder.com/30' }}" 
                             class="rounded-circle border" 
                             style="width: 30px; height: 30px; object-fit: cover;" 
-                            alt="Avatar">    
+                            alt="Avatar">      
                         <i class="fa-solid me-2"></i> r/{{ $community->name }}
                     </span>
                 </a>
             @endforeach
+            
+            {{-- USE NEW BRANCH LOGIC: "Explore" matches the route name better than "Create" --}}
             <a href="{{ route('explore') }}" class="nav-link text-secondary d-flex justify-content-between align-items-center" style="padding: 10px 15px;">
-                <span><i class="fa-solid me-2"></i> Create Community</span>
+                <span><i class="fa-solid me-2"></i> Explore Communities</span>
             </a>
-        </div>
-
-        <div class="card">
-            <div class="card-header bg-light fw-bold small text-uppercase">r/Laravel Rules</div>
-            <ul class="list-group list-group-flush small">
-                <li class="list-group-item">1. Be respectful to others.</li>
-                <li class="list-group-item">2. No spam or self-promotion.</li>
-                <li class="list-group-item">3. Post relevant content only.</li>
-            </ul>
         </div>
     </div>
 

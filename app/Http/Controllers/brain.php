@@ -113,6 +113,7 @@ class brain extends Controller
             // CRITICAL: Never save a password as plain text. Use Hash::make()
         User::create([
             'username' => $request->username,
+            'role_id' => 2,
             'password' => $request->password, 
             'role_id' => 2, // Default role as 'regular user'
             'email' => $request->email,

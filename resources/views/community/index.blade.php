@@ -7,7 +7,7 @@
     <div class="card-body d-flex align-items-end pb-2" style="margin-top: -30px;">
         <div class="bg-white rounded-circle p-1">
             <div class="bg-dark rounded-circle d-flex align-items-center justify-content-center text-white border border-4 border-white" style="width: 70px; height: 70px; font-size: 30px;">
-                <img src="{{ $community->icon_url }}" 
+                <img src="{{ !empty($community->icon_url) ? $community->icon_url : 'https://via.placeholder.com/70' }}" 
                     class="rounded-circle border" 
                     style="width: 70px; height: 70px; object-fit: cover;" 
                     alt="Avatar">
@@ -35,27 +35,24 @@
                 
                 <div class="vote-section d-flex flex-column align-items-center p-2 bg-light">
                     
-                    <form action="{{ route('post.vote') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="post_id" value="{{ $post->post_id }}">
-                        <input type="hidden" name="vote_type" value="1">
-                        
-                        <button type="submit" class="border-0 bg-transparent p-0">
-                            <i class="fa-solid fa-arrow-up vote-btn mb-1 {{ $post->user_vote_type == 1 ? 'text-warning' : 'text-secondary' }}"></i>
-                        </button>
-                    </form>
+                    {{-- UPVOTE BUTTON (No Form) --}}
+                    <button onclick="ajaxVote({{ $post->post_id }}, 1)" 
+                            class="border-0 bg-transparent p-0">
+                        <i id="up-btn-{{ $post->post_id }}" 
+                           class="fa-solid fa-arrow-up vote-btn mb-1 {{ $post->user_vote_type == 1 ? 'text-warning' : 'text-secondary' }}"></i>
+                    </button>
 
-                    <span class="fw-bold my-1">{{ $post->votes_sum_vote_type ?? 0 }}</span>
+                    {{-- SCORE --}}
+                    <span id="score-{{ $post->post_id }}" class="fw-bold my-1">
+                        {{ $post->votes_sum_vote_type ?? 0 }}
+                    </span>
 
-                    <form action="{{ route('post.vote') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="post_id" value="{{ $post->post_id }}">
-                        <input type="hidden" name="vote_type" value="-1">
-                        
-                        <button type="submit" class="border-0 bg-transparent p-0">
-                            <i class="fa-solid fa-arrow-down vote-btn mt-1 {{ $post->user_vote_type == -1 ? 'text-primary' : 'text-secondary' }}"></i>
-                        </button>
-                    </form>
+                    {{-- DOWNVOTE BUTTON (No Form) --}}
+                    <button onclick="ajaxVote({{ $post->post_id }}, -1)" 
+                            class="border-0 bg-transparent p-0">
+                        <i id="down-btn-{{ $post->post_id }}" 
+                           class="fa-solid fa-arrow-down vote-btn mt-1 {{ $post->user_vote_type == -1 ? 'text-primary' : 'text-secondary' }}"></i>
+                    </button>
 
                 </div>
                 
@@ -67,31 +64,28 @@
                         </div>
                         @php
                             // Check if the logged-in user is a mod/admin of THIS community
-                            // You might need to pass this data from the controller efficiently, 
-                            // but for now, here is a simple check if you loaded the relationship.
-                            
                             $userRole = 'guest';
                             if(Auth::check()) {
                                 $sub = \App\Models\Subscription::where('user_id', Auth::id())
-                                        ->where('community_id', $post->community_id)
-                                        ->first();
+                                            ->where('community_id', $post->community_id)
+                                            ->first();
                                 if($sub) $userRole = $sub->role;
                             }
                         @endphp
 
                         @if(Auth::id() === $post->user_id || $userRole === 'admin' || $userRole === 'moderator')
                             <div class="dropdown">
-                                <button class="btn..." data-bs-toggle="dropdown">...</button>
+                                <button class="btn btn-sm btn-light" data-bs-toggle="dropdown">...</button>
                                 <ul class="dropdown-menu">
                                     
                                     @if(Auth::id() === $post->user_id)
-                                        <li><a href="{{ route('post.edit', $post->post_id) }}">Edit</a></li>
+                                        <li><a href="{{ route('post.edit', $post->post_id) }}" class="dropdown-item">Edit</a></li>
                                     @endif
 
                                     <li>
                                         <form action="{{ route('post.destroy', $post->post_id) }}" method="POST">
                                             @csrf @method('DELETE')
-                                            <button class="text-danger">Delete Post</button>
+                                            <button class="dropdown-item text-danger">Delete Post</button>
                                         </form>
                                     </li>
                                     
@@ -127,7 +121,6 @@
                                         <p class="mb-1 small">{{ $comment->content }}</p>
 
                                         {{-- Child Comments (Replies) --}}
-                                        {{-- We limit to 2 replies directly in the view using 'take(2)' --}}
                                         <div class="ms-4 mt-2 border-start ps-3 border-primary">
                                             @foreach($comment->replies->take(2) as $reply)
                                                 <div class="mb-2">
@@ -182,6 +175,7 @@
             </div>
         </div>
 
+        {{-- TODO make a rule page --}}
         <div class="card">
             <div class="card-header bg-light fw-bold small">
                 r/{{ $community->name ?? 'topic' }} Rules 
@@ -238,4 +232,52 @@
 
     </div>
 </div>
+
+{{-- JAVASCRIPT FOR AJAX VOTING --}}
+<script>
+    async function ajaxVote(postId, type) {
+        const url = "{{ route('post.vote') }}"; 
+        
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                },
+                body: JSON.stringify({
+                    post_id: postId,
+                    vote_type: type
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Update Score
+                document.getElementById('score-' + postId).innerText = data.new_total;
+
+                // Update Colors
+                const upIcon = document.getElementById('up-btn-' + postId);
+                const downIcon = document.getElementById('down-btn-' + postId);
+
+                // Reset
+                upIcon.className = 'fa-solid fa-arrow-up vote-btn mb-1 text-secondary';
+                downIcon.className = 'fa-solid fa-arrow-down vote-btn mt-1 text-secondary';
+
+                // Set new color
+                if (data.user_status === 1) {
+                    upIcon.classList.remove('text-secondary');
+                    upIcon.classList.add('text-warning');
+                } else if (data.user_status === -1) {
+                    downIcon.classList.remove('text-secondary');
+                    downIcon.classList.add('text-primary');
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            // Optional: alert('Vote failed. Login required?');
+        }
+    }
+</script>
 @endsection

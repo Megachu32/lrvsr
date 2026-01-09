@@ -10,6 +10,14 @@ use App\Models\User;
 use App\Models\Vote;
 use Illuminate\Support\Facades\Hash; // Import this for password security!
 
+//export library
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
+//end export library
+
 use Illuminate\Http\Request;
 
 class brain extends Controller
@@ -250,45 +258,53 @@ class brain extends Controller
         return redirect()->route('community.view', $id)->with('success', 'You have joined the community!');
     }
 
-    public function vote(Request $request)
+   public function vote(Request $request)
     {
-        // 1. Validate
+        // Validate
         $request->validate([
             'post_id' => 'required|exists:posts,post_id',
-            'vote_type' => 'required|in:1,-1', // 1 = Up, -1 = Down
+            'vote_type' => 'required|in:1,-1'
         ]);
 
         $user_id = Auth::id();
         $post_id = $request->post_id;
-        $new_vote_value = (int)$request->vote_type;
+        $val = $request->vote_type;
 
-        // 2. Check if user already voted on this post
-        $existing_vote = Vote::where('user_id', $user_id)
-                            ->where('post_id', $post_id)
-                            ->first();
+        // Check if vote exists
+        $vote = \App\Models\Vote::where('user_id', $user_id)
+                                ->where('post_id', $post_id)
+                                ->first();
 
-        if ($existing_vote) {
-            // SCENARIO A: User clicked the SAME arrow again (Undo vote)
-            if ($existing_vote->vote_type === $new_vote_value) {
-                $existing_vote->delete();
-                return back(); // No message needed, just refreshes
-            } 
-            
-            // SCENARIO B: User changed their mind (Up -> Down or Down -> Up)
-            else {
-                $existing_vote->update(['vote_type' => $new_vote_value]);
-                return back();
+        if ($vote) {
+            if ($vote->vote_type == $val) {
+                // Clicked same button? Toggle OFF (remove vote)
+                $vote->delete();
+                $user_vote_status = 0;
+            } else {
+                // Clicked different button? Change vote
+                $vote->vote_type = $val;
+                $vote->save();
+                $user_vote_status = $val;
             }
+        } else {
+            // New Vote
+            \App\Models\Vote::create([
+                'user_id' => $user_id,
+                'post_id' => $post_id,
+                'vote_type' => $val
+            ]);
+            $user_vote_status = $val;
         }
 
-        // SCENARIO C: New Vote (User hasn't voted yet)
-        Vote::create([
-            'user_id' => $user_id,
-            'post_id' => $post_id,
-            'vote_type' => $new_vote_value
-        ]);
+        // Calculate new total
+        $newTotal = \App\Models\Vote::where('post_id', $post_id)->sum('vote_type');
 
-        return back();
+        // RETURN JSON (This is what AJAX needs)
+        return response()->json([
+            'success' => true,
+            'new_total' => $newTotal,
+            'user_status' => $user_vote_status // 1, -1, or 0
+        ]);
     }
 
     public function search(Request $request)
@@ -454,6 +470,257 @@ class brain extends Controller
         return view('admin.index', compact('stats', 'users', 'communities'));
     }
 
+    // Moderation Report Function
+    public function report(Request $request)
+    {
+        // Security Check (Super Admin only)
+        if (Auth::user()->role_id !== 1) {
+            abort(403, 'Access Denied.');
+        }
+
+        $query = \App\Models\Post::with(['user', 'community']) // Eager load relationships
+            ->withSum('votes', 'vote_type'); // Calculate the 'score'
+
+        // Apply Date Filter if selected
+        if ($request->has('date') && $request->date != null) {
+            $query->whereDate('created_at', $request->date);
+        }
+
+        $posts = $query->latest()->get();
+
+        return view('admin.report', compact('posts'));
+    }
+
+   public function activityReport(Request $request)
+    {
+        // 1. Security Check (Super Admin only)
+        // Adjust role_id if your super admin is different
+        if (Auth::user()->role_id !== 1) { 
+            abort(403, 'Access Denied.'); 
+        }
+
+        // 2. Setup Inputs & Defaults
+        $community_id = $request->input('community_id');
+        
+        // If no date provided, default to: End = Today, Start = 6 days ago (7 days total)
+        $end = $request->input('end_date') ? Carbon::parse($request->input('end_date')) : now();
+        $start = $request->input('start_date') ? Carbon::parse($request->input('start_date')) : now()->subDays(6);
+        
+        $allCommunities = \App\Models\Community::all();
+
+        // 3. Generate Date Headers (e.g., [2026-01-01, 2026-01-02])
+        $period = CarbonPeriod::create($start, $end);
+        $dates = [];
+        foreach ($period as $date) {
+            $dates[] = $date->format('Y-m-d');
+        }
+
+        // 4. Fetch Data (Only if a community is selected)
+        $matrix = []; // Structure: ['Username' => ['2026-01-01' => 5, '2026-01-02' => 0]]
+        
+        if ($community_id) {
+            // Group posts by Date and User
+            $posts = \App\Models\Post::selectRaw('DATE(created_at) as date, user_id, count(*) as total')
+                ->where('community_id', $community_id)
+                ->whereBetween('created_at', [$start->startOfDay(), $end->endOfDay()])
+                ->groupBy('date', 'user_id')
+                ->get();
+
+            // Populate the matrix
+            foreach ($posts as $p) {
+                $user = \App\Models\User::find($p->user_id);
+                if ($user) {
+                    $matrix[$user->username][$p->date] = $p->total;
+                }
+            }
+        }
+
+        // ==========================================
+        // 5. EXPORT LOGIC (If "Export" button clicked)
+        // ==========================================
+        if ($request->has('export') && $request->export == 'true') {
+            
+            // A. Create the Spreadsheet
+            $spreadsheet = new Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+
+            // B. Set Headers (Row 1)
+            $sheet->setCellValue('A1', 'User'); // A1 is User
+            
+            $colIndex = 2; // Start at Column B
+            foreach ($dates as $date) {
+                // Convert index to letter (2 -> B, 3 -> C)
+                $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
+                $sheet->setCellValue($colLetter . '1', $date);
+                $colIndex++;
+            }
+            
+            // Set "Total" Column at the end
+            $lastColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
+            $sheet->setCellValue($lastColLetter . '1', 'Total');
+
+            // Bold the Headers
+            $sheet->getStyle('A1:' . $lastColLetter . '1')->getFont()->setBold(true);
+
+            // C. Fill Data Rows
+            $rowIndex = 2;
+            foreach ($matrix as $username => $days) {
+                $sheet->setCellValue('A' . $rowIndex, $username);
+                $sheet->getStyle('A' . $rowIndex)->getFont()->setBold(true);
+
+                $colIndex = 2;
+                $total = 0;
+                foreach ($dates as $date) {
+                    $count = $days[$date] ?? 0;
+                    $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
+                    
+                    if ($count > 0) {
+                        $sheet->setCellValue($colLetter . $rowIndex, $count);
+                    }
+                    $total += $count;
+                    $colIndex++;
+                }
+                // Set Row Total
+                $sheet->setCellValue($lastColLetter . $rowIndex, $total);
+                $rowIndex++;
+            }
+
+            // D. Auto-size columns
+            foreach (range(1, $colIndex) as $col) {
+                $sheet->getColumnDimensionByColumn($col)->setAutoSize(true);
+            }
+
+            // E. Download the File
+            $fileName = 'activity_report_' . date('Y-m-d') . '.xlsx';
+            
+            $response = new StreamedResponse(function() use ($spreadsheet) {
+                $writer = new Xlsx($spreadsheet);
+                $writer->save('php://output');
+            });
+
+            $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            $response->headers->set('Content-Disposition', 'attachment;filename="'.$fileName.'"');
+            $response->headers->set('Cache-Control', 'max-age=0');
+
+            return $response;
+        }
+
+        // 6. Return View (If just viewing the page)
+        return view('admin.report', compact('allCommunities', 'dates', 'matrix', 'community_id', 'start', 'end'));
+    }
+
+    // Ban a User globally (Super Admin)
+    public function adminBanUser($id)
+    {
+        if (Auth::user()->role_id !== 1) { abort(403); }
+
+        // You might want to just delete them, or set a 'banned' flag.
+        // For now, let's just delete the account to keep it simple.
+        \App\Models\User::destroy($id);
+
+        return back()->with('success', 'User has been banned/deleted.');
+    }
+
+    // Delete a Community globally
+    public function adminDeleteCommunity($id)
+    {
+        if (Auth::user()->role_id !== 1) { abort(403); }
+
+        \App\Models\Community::destroy($id);
+
+        return back()->with('success', 'Community deleted.');
+    }
+
+    // 1. Update Community Icon
+    public function updateCommunityIcon(Request $request, $id)
+    {
+        $community = \App\Models\Community::findOrFail($id);
+        
+        // Security: Only the Owner (Admin of the community) can do this
+        // We check the subscription table to see if the user is 'admin' for this community
+        $sub = \App\Models\Subscription::where('community_id', $id)
+                ->where('user_id', Auth::id())
+                ->first();
+
+        if (!$sub || $sub->role !== 'admin') {
+            abort(403, 'Only the Owner can change the icon.');
+        }
+
+        $request->validate(['icon_url' => 'required|url']);
+        
+        $community->icon_url = $request->icon_url;
+        $community->save();
+
+        return back()->with('success', 'Icon updated successfully!');
+    }
+
+    // 2. Transfer Ownership (The "Swap")
+    public function transferOwnership(Request $request, $community_id)
+    {
+        $request->validate(['new_owner_id' => 'required|exists:users,user_id']);
+        
+        // Use a Transaction to ensure both swaps happen safely
+        \Illuminate\Support\Facades\DB::transaction(function () use ($request, $community_id) {
+            $currentUserId = Auth::id();
+            $newOwnerId = $request->new_owner_id;
+
+            // A. Verify Current User is Owner
+            $currentSub = \App\Models\Subscription::where('community_id', $community_id)
+                ->where('user_id', $currentUserId)
+                ->where('role', 'admin')
+                ->firstOrFail();
+
+            // B. Verify Target User is a Member
+            $targetSub = \App\Models\Subscription::where('community_id', $community_id)
+                ->where('user_id', $newOwnerId)
+                ->first();
+            
+            if (!$targetSub) {
+                // If they aren't a member, fail (or you could auto-join them, but fail is safer)
+                abort(400, 'The new owner must be a member of this community first.');
+            }
+
+            // C. The Swap
+            // 1. Demote current user to Moderator (or Member)
+            $currentSub->role = 'moderator';
+            $currentSub->save();
+
+            // 2. Promote target user to Admin (Owner)
+            $targetSub->role = 'admin';
+            $targetSub->save();
+
+            // 3. Update the main community table's "user_id" (Creator/Owner pointer)
+            $community = \App\Models\Community::findOrFail($community_id);
+            $community->creator_id = $newOwnerId;
+            $community->save();
+        });
+
+        return back()->with('success', 'Ownership transferred! You are now a Moderator.');
+    }
+
+    // Function 1: Show the Form (GET)
+   
+
+    // Function 2: Save the Data (POST)
+    public function storePost(Request $request)
+    {
+        $request->validate([
+            'title' => 'required',
+            'content' => 'required',
+            'community_id' => 'required|exists:communities,community_id',
+        ]);
+
+        $post = new \App\Models\Post();
+        $post->title = $request->title;
+        $post->content = $request->content;
+        $post->community_id = $request->community_id;
+        $post->user_id = Auth::id();
+        $post->save();
+
+        return redirect()->route('community.view', $request->community_id)->with('success', 'Post created!');
+    }
+
+    
 
 // --- RULE MANAGEMENT FUNCTIONS ---
 

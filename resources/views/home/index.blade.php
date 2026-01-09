@@ -24,12 +24,10 @@
                     @foreach($communities as $community)
                         <a href="{{ route('community.view', $community->community_id) }}" class="nav-link text-secondary d-flex justify-content-between align-items-center">
                             <span>
-                                <!-- <span class="bg-primary rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center text-white" style="width: 20px; height: 20px; font-size: 24px;">
-                                    </span> -->
-                                    <img src="{{ $community->icon_url }}" 
-                                        class="rounded-circle border" 
-                                        style="width: 30px; height: 30px; object-fit: cover;" 
-                                        alt="Avatar">                        
+                                <img src="{{ !empty($community->icon_url) ? $community->icon_url : 'https://via.placeholder.com/30' }}" 
+                                    class="rounded-circle border" 
+                                    style="width: 30px; height: 30px; object-fit: cover;" 
+                                    alt="Avatar">                        
                                 <i class="fa-solid me-2"></i> r/{{ $community->name }}
                             </span>
                         </a>
@@ -53,29 +51,28 @@
 
         @foreach($posts as $post)
             <div class="card d-flex flex-row mb-3"> 
+                
+                {{-- VOTE SECTION (FIXED FOR AJAX) --}}
                 <div class="vote-section d-flex flex-column align-items-center p-2 bg-light">
                     
-                    <form action="{{ route('post.vote') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="post_id" value="{{ $post->post_id }}">
-                        <input type="hidden" name="vote_type" value="1">
-                        
-                        <button type="submit" class="border-0 bg-transparent p-0">
-                            <i class="fa-solid fa-arrow-up vote-btn mb-1 {{ $post->user_vote_type == 1 ? 'text-warning' : 'text-secondary' }}"></i>
-                        </button>
-                    </form>
+                    {{-- Upvote Button --}}
+                    <button onclick="ajaxVote({{ $post->post_id }}, 1)" 
+                            class="border-0 bg-transparent p-0">
+                        <i id="up-btn-{{ $post->post_id }}" 
+                           class="fa-solid fa-arrow-up vote-btn mb-1 {{ $post->user_vote_type == 1 ? 'text-warning' : 'text-secondary' }}"></i>
+                    </button>
 
-                    <span class="fw-bold my-1">{{ $post->votes_sum_vote_type ?? 0 }}</span>
+                    {{-- Score --}}
+                    <span id="score-{{ $post->post_id }}" class="fw-bold my-1">
+                        {{ $post->votes_sum_vote_type ?? 0 }}
+                    </span>
 
-                    <form action="{{ route('post.vote') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="post_id" value="{{ $post->post_id }}">
-                        <input type="hidden" name="vote_type" value="-1">
-                        
-                        <button type="submit" class="border-0 bg-transparent p-0">
-                            <i class="fa-solid fa-arrow-down vote-btn mt-1 {{ $post->user_vote_type == -1 ? 'text-primary' : 'text-secondary' }}"></i>
-                        </button>
-                    </form>
+                    {{-- Downvote Button --}}
+                    <button onclick="ajaxVote({{ $post->post_id }}, -1)" 
+                            class="border-0 bg-transparent p-0">
+                        <i id="down-btn-{{ $post->post_id }}" 
+                           class="fa-solid fa-arrow-down vote-btn mt-1 {{ $post->user_vote_type == -1 ? 'text-primary' : 'text-secondary' }}"></i>
+                    </button>
 
                 </div>
                 
@@ -101,7 +98,6 @@
                         <div class="card card-body bg-light border-0">
                             
                             @if($post->comments->count() > 0)
-                                {{-- Loop through Parent Comments --}}
                                 @foreach($post->comments as $comment)
                                     <div class="mb-3 border-bottom pb-2">
                                         <div class="d-flex justify-content-between">
@@ -110,8 +106,7 @@
                                         </div>
                                         <p class="mb-1 small">{{ $comment->content }}</p>
 
-                                        {{-- Child Comments (Replies) --}}
-                                        {{-- We limit to 2 replies directly in the view using 'take(2)' --}}
+                                        {{-- Child Comments --}}
                                         <div class="ms-4 mt-2 border-start ps-3 border-primary">
                                             @foreach($comment->replies->take(2) as $reply)
                                                 <div class="mb-2">
@@ -127,7 +122,6 @@
                                     </div>
                                 @endforeach
 
-                                {{-- "View All" Link if there are more comments than the 3 we loaded --}}
                                 @if($post->comments_count > 3)
                                     <div class="text-center">
                                         <a href="#" class="btn btn-sm btn-outline-dark rounded-pill">View all {{ $post->comments_count }} comments</a>
@@ -148,23 +142,73 @@
     <div class="col-md-3 d-none d-lg-block">
         <div class="card mb-3">
             <div class="card-header bg-primary text-white fw-bold">About Community</div>
-
-                    @foreach($communities as $community)
-                        <a href="{{ route('community.view', $community->community_id) }}" class="nav-link text-secondary d-flex justify-content-between align-items-center" style="padding: 10px 15px;">
-                            <span>
-                                <img src="{{ $community->icon_url }}" 
-                                    class="rounded-circle border" 
-                                    style="width: 30px; height: 30px; object-fit: cover;" 
-                                    alt="Avatar">     
-                                <i class="fa-solid me-2"></i> r/{{ $community->name }}
-                            </span>
-                        </a>
-                    @endforeach
-                    <a href="{{ route('explore') }}" class="nav-link text-secondary d-flex justify-content-between align-items-center" style="padding: 10px 15px;">
-                        <span><i class="fa-solid me-2"></i> Explore Communities</span>
-                    </a>
+            @foreach($communities as $community)
+                <a href="{{ route('community.view', $community->community_id) }}" class="nav-link text-secondary d-flex justify-content-between align-items-center" style="padding: 10px 15px;">
+                    <span>
+                        {{-- USE MAIN LOGIC: Checks if icon exists, otherwise shows default gray circle --}}
+                        <img src="{{ !empty($community->icon_url) ? $community->icon_url : 'https://via.placeholder.com/30' }}" 
+                            class="rounded-circle border" 
+                            style="width: 30px; height: 30px; object-fit: cover;" 
+                            alt="Avatar">      
+                        <i class="fa-solid me-2"></i> r/{{ $community->name }}
+                    </span>
+                </a>
+            @endforeach
+            
+            {{-- USE NEW BRANCH LOGIC: "Explore" matches the route name better than "Create" --}}
+            <a href="{{ route('explore') }}" class="nav-link text-secondary d-flex justify-content-between align-items-center" style="padding: 10px 15px;">
+                <span><i class="fa-solid me-2"></i> Explore Communities</span>
+            </a>
         </div>
     </div>
 
 </div>
+
+{{-- JAVASCRIPT FOR AJAX VOTING --}}
+<script>
+    async function ajaxVote(postId, type) {
+        const url = "{{ route('post.vote') }}"; 
+        
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                },
+                body: JSON.stringify({
+                    post_id: postId,
+                    vote_type: type
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Update Score
+                document.getElementById('score-' + postId).innerText = data.new_total;
+
+                // Update Colors
+                const upIcon = document.getElementById('up-btn-' + postId);
+                const downIcon = document.getElementById('down-btn-' + postId);
+
+                // Reset
+                upIcon.className = 'fa-solid fa-arrow-up vote-btn mb-1 text-secondary';
+                downIcon.className = 'fa-solid fa-arrow-down vote-btn mt-1 text-secondary';
+
+                // Set new color
+                if (data.user_status === 1) {
+                    upIcon.classList.remove('text-secondary');
+                    upIcon.classList.add('text-warning');
+                } else if (data.user_status === -1) {
+                    downIcon.classList.remove('text-secondary');
+                    downIcon.classList.add('text-primary');
+                }
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            // Optional: alert('Vote failed. Login required?');
+        }
+    }
+</script>
 @endsection
